@@ -2,7 +2,7 @@
 
 (require racket/match
          (only-in redex lw with-atomic-rewriter with-compound-rewriters)
-         (for-syntax racket/base syntax/parse syntax/stx)
+         (for-syntax racket/base syntax/parse syntax/stx racket/format)
          (for-template racket/base))
 
 (provide with-atomic-rewriters
@@ -34,6 +34,9 @@
          (with-compound-rewriters cs.rws
            body))]))
 
+;; allow easy definition of macro which
+;; uses a particular set of rewriters for
+;; executing the body expr
 (define-syntax (define-rw-context stx)
   (define-splicing-syntax-class atomic-rws
     (pattern (~seq #:atomic rws:expr))
@@ -66,9 +69,11 @@
        #'(lw (or (list (lw "(" _ _ _ _ #f #f)
                        pats ...
                        (lw ")" _ _ _ _ #f #f))
+                 
                  (list (lw "[" _ _ _ _ #f #f)
                        pats ...
                        (lw "]" _ _ _ _ #f #f))
+                 
                  (list (lw "{" _ _ _ _ #f #f)
                        pats ...
                        (lw "}" _ _ _ _ #f #f)))
@@ -78,31 +83,67 @@
 ;; each piece into the appropriate match forms
 (define-for-syntax (parse-rw-internal stx)
   (syntax-parse stx
-    [x:id #'x]
-    [((~literal quote) sym)
+    [(~datum ...) stx]
+    [((~literal unquote) match-expr) #'match-expr]
+    [sym:id
      #'(-literal sym)]
     [(e ...)
-     #`(-sexp #,@(stx-map parse-rw-internal #'(e ...)))]))
+     #`(-sexp #,@(stx-map parse-rw-internal #'(e ...)))]
+    [_ (raise-syntax-error
+        'rw
+        (~a "unrecognized rw pattern: " (syntax->datum stx))
+        stx)]))
 
 ;; rw
 ;; rewriter builder
-;; (rw ('name pat ...) => output)
+;; (rw name [`(name pats ...) => output] ...)
 ;; ' is used to declare literal matches
 ;; anything else is matched like a match pattern variable
 ;; output is any expression
 (define-syntax (rw stx)
   (syntax-parse stx
-    [(_ (((~literal quote) name) . args) (~datum =>) output)
+    [(_ [((~literal quasiquote) (name:id . args)) (~datum =>) output]
+        cases ...)
      #`(match-lambda
-         [(or (list (lw "(" _ _ _ _ #f #f)
-                    (-literal name) #,@(stx-map parse-rw-internal #'args)
-                    (lw ")" _ _ _ _ #f #f))
-              (list (lw "[" _ _ _ _ #f #f)
-                    (-literal name) #,@(stx-map parse-rw-internal #'args)
-                    (lw "]" _ _ _ _ #f #f))
-              (list (lw "{" _ _ _ _ #f #f)
-                    (-literal name) #,@(stx-map parse-rw-internal #'args)
-                    (lw "}" _ _ _ _ #f #f)))
-          output]
-         [else (error 'rw "unrecognized case of ~a: ~a" 'name else)])]
-    [_ (error 'rw "expected (rw ('name args ...) => output), got ~a" stx)]))
+         #,(rw-case #'name #'[(quasiquote (name . args)) => output])
+         #,@(stx-map (λ (c) (rw-case #'name c)) #'(cases ...))
+         [else (error 'rw "no ~a case for ~a" 'name else)])]
+    [_ (raise-syntax-error
+        'rw
+        (~a "expected: (rw [`(name pats ...) => output] ...)\n got: "
+            (syntax->datum stx)
+            "\n")
+        stx)]))
+
+(define-for-syntax (rw-case name case)
+  (syntax-parse case
+    [[((~literal quasiquote) (cname:id . args)) (~datum =>) output]
+     (unless (free-identifier=? name #'cname)
+       (raise-syntax-error
+        'rw-case
+        (~a "expected (rw [`(name pats ...) => output] ...),\n but case name "
+            (syntax->datum name)
+            " is not equal to "
+            (syntax->datum #'cname))
+        case))
+     #`[(or (list
+             (lw "(" _ _ _ _ #f #f)
+             (-literal cname) #,@(stx-map parse-rw-internal #'args)
+             (lw ")" _ _ _ _ #f #f))
+            
+            (list
+             (lw "[" _ _ _ _ #f #f)
+             (-literal cname) #,@(stx-map parse-rw-internal #'args)
+             (lw "]" _ _ _ _ #f #f))
+            
+            (list
+             (lw "{" _ _ _ _ #f #f)
+             (-literal cname) #,@(stx-map parse-rw-internal #'args)
+             (lw "}" _ _ _ _ #f #f)))
+        output]]
+    [_ (raise-syntax-error
+        'rw-case
+        (~a " expected (rw [`(name pats ...) => output] ...)\n got: "
+            (syntax->datum case)
+            "\n")
+        case)]))

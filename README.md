@@ -8,22 +8,36 @@ Provides the following syntax:
 
 ### rw
 
-Allows for simple compound-rewriter definitions. The compound expression rewriter for
-an term 'name must be an s-expression ('name rest ...).
+Allows for simple compound-rewriter definitions (refer to redex docs for specific requirements on
+what a compound rewriter is). Basically, a compound-rewriter for a symbol 'name'
+will be called for redex terms being typeset that look like `(name any ...)`
 
-When writing patterns for rw definitions, quote things to be literally matched, all other
-identifiers will bind like a standard match variable.
+The `rw` macro builds rewriters from quasiquote like patterns of the form
+```racket (rw [`(name pats ...) => output] ...) ```
+
+Things not unquoted are matched as literal symbols in the redex term, while things
+unquoted are treated like standard match patterns.
 
 Example usage:
 ```racket
 (define lambda-rw
-  (rw ('lambda ([x ': t]) body)
-      => (list "" "λ" x ":" t ". " body)))
+    (rw [`(lambda ([,x : ,t]) ,body)
+         => (list "" "λ" x ":" t ". " body)]
+        [`(lambda ([,x : ,t]) ,body ,bodies ...)
+         => (list* "" "λ" x ":" t ". (begin " body (append bodies (list ")")))]))
 ```
 
-This defines a rewriter which will match PLT Redex terms of the form `(lambda ([any : any]) any)`.
-Our particular definition shows how you might use a rewriter to produce 
-"more traditional" looking lambda-expressions as far as figures go: `λx:t.e`.
+This defines a rewriter with two cases, which together allow this rewriter 
+to successfully rewrite PLT Redex terms of the form 
+`(lambda ([any : any]) any any ...)`.
+Our particular definition removes the parens from around the lambda and
+adds a begin if there is more than one body expression. In other words, 
+`(lambda ([x : t]) e)` is typeset to look like `λx:t.e`, 
+and `(lambda ([x : t]) e e)` is typeset to look like `λx:t.(begin e e)`.
+
+Note that the sub-terms we are not altering but merely rearranging (_e.g. t_) 
+will have any other applicablerewriters applied to them as well. So if we
+had an atomic rewriter converting `t` to `τ`, that would still occur, etc...
 
 For more info on compound rewriters, see the redex docs. They are supposed to be functions 
 with signature `(listof lw) -> (listof (or/c lw? string? pict?))` which is

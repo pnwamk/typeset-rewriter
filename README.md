@@ -13,7 +13,7 @@ what a compound rewriter is). Basically, a compound-rewriter for a symbol 'name'
 will be called for redex terms being typeset that look like `(name any ...)`
 
 The `rw` macro builds rewriters from quasiquote like patterns of the form
-```racket (rw [`(name pats ...) => output] ...) ```
+``` (rw [`(name pats ...) => output] ...) ```
 
 Things not unquoted are matched as literal symbols in the redex term, while things
 unquoted are treated like standard match patterns.

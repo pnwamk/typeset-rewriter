@@ -21,10 +21,10 @@ unquoted are treated like standard match patterns.
 Example usage:
 ```racket
 (define lambda-rw
-    (rw [`(lambda ([,x : ,t]) ,body)
-         => (list "" "λ" x ":" t ". " body)]
-        [`(lambda ([,x : ,t]) ,body ,bodies ...)
-         => (list* "" "λ" x ":" t ". (begin " body (append bodies (list ")")))]))
+  (rw [`(lambda ([,x : ,t]) ,body)
+       => (list "λ" x ":" t ". " body)]
+      [`(lambda ([,x : ,t]) ,body ,bodies ...)
+      => (list* "λ" x ":" t ". (begin " body (append bodies (list ")")))]))
 ```
 
 This defines a rewriter with two cases, which together allow this rewriter 

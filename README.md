@@ -6,14 +6,15 @@ See the PLT Redex docs on [typesetting](http://docs.racket-lang.org/redex/The_Re
 
 Provides the following syntax:
 
-### rw
+### rw-lambda
 
 Allows for simple compound-rewriter definitions (refer to redex docs for specific requirements on
-what a compound rewriter is). Basically, a compound-rewriter for a symbol 'name'
+what a compound rewriter is). Named to highlight similarity to Racket's own `match-lambda`. 
+Basically, a compound-rewriter for a symbol 'name'
 will be called for redex terms being typeset that look like `(name any ...)`
 
-The `rw` macro builds rewriters from quasiquote like patterns of the form
-``` (rw [`(name pats ...) => output] ...) ```
+The `rw-lambda` macro builds rewriters from quasiquote like patterns of the form
+``` (rw-lambda [`(name pats ...) => output] ...) ```
 
 Things not unquoted are matched as literal symbols in the redex term, while things
 unquoted are treated like standard match patterns.
@@ -21,10 +22,11 @@ unquoted are treated like standard match patterns.
 Example usage:
 ```racket
 (define lambda-rw
-  (rw [`(lambda ([,x : ,t]) ,body)
-       => (list "λ" x ":" t ". " body)]
-      [`(lambda ([,x : ,t]) ,body ,bodies ...)
-      => (list* "λ" x ":" t ". (begin " body (append bodies (list ")")))]))
+  (rw-lambda 
+    [`(lambda ([,x : ,t]) ,body)
+     => (list "λ" x ":" t ". " body)]
+    [`(lambda ([,x : ,t]) ,body ,bodies ...)
+     => (list* "λ" x ":" t ". (begin " body (append bodies (list ")")))]))
 ```
 
 This defines a rewriter with two cases, which together allow this rewriter 
@@ -43,23 +45,23 @@ For more info on compound rewriters, see the redex docs. They are supposed to be
 with signature `(listof lw) -> (listof (or/c lw? string? pict?))` which is
 "rewritten appropriately."
 
-### with-atomic-rewriters
+### with-atomic-rws
 
 Like `with-compound-rewriters` for atomic rewriters.
 
 Example usage:
 ```racket
-(with-atomic-rewriters (['lambda "λ"] ['-> "→"]) 
+(with-atomic-rws (['lambda "λ"] ['-> "→"]) 
  body-expr)
 ```
 
-### with-rewriters
+### with-rws
 
 Allows for atomic and/or compound rewriters to be specified.
 
 Example usage:
 ```racket
-(with-rewriters
+(with-rws
  #:atomic (['Env "Γ"] ['exp "e"] ['ty "τ"] ['-> "→"] ['integer "n"])
  #:compound (['lambda lambda-rw]
              ['typeof typeof-rw]
@@ -75,7 +77,7 @@ Defines a macro to reuse sets of rewriters.
 
 Example usage:
 ```racket
-(define-rw-context with-rws
+(define-rw-context with-stlc-rws
   #:atomic (['Env "Γ"] ['exp "e"] ['ty "τ"] ['-> "→"] ['integer "n"])
   #:compound (['lambda lambda-rw]
               ['typeof typeof-rw]
@@ -83,7 +85,7 @@ Example usage:
               ['lookup lookup-rw]
               ['val-type val-type-rw]))
               
-(with-rws render-expr1)
-(with-rws render-expr2)
+(with-stlc-rws render-expr1)
+(with-stlc-rws render-expr2)
 ```
 

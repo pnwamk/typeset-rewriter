@@ -17,7 +17,7 @@
     [(_ () body) #'body]
     [(_ ([x rw] rst ...) body)
      #'(with-atomic-rewriter x rw
-         (with-atomic-rewriters (rst ...)
+         (with-atomic-rws (rst ...)
            body))]))
 
 ;; allows for atomic + compound rewriters
@@ -30,7 +30,7 @@
     (pattern (~seq) #:with rws #'()))
   (syntax-parse stx
     [(_ as:atomic-rws cs:compound-rws body)
-     #'(with-atomic-rewriters as.rws
+     #'(with-atomic-rws as.rws
          (with-compound-rewriters cs.rws
            body))]))
 

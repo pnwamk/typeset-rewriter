@@ -143,6 +143,7 @@
 ;; each piece into the appropriate match forms
 (define-for-syntax (parse-rw-case-internal stx)
   (syntax-parse stx
+    [((~literal quote) (~datum ...)) #'(lw '(... ...) _ _ _ _ _ _)]
     [(~datum ...) stx]
     [((~literal unquote) match-expr) #'match-expr]
     [sym:id

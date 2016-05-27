@@ -1,3 +1,2 @@
 #lang info
-(define deps '("base"
-               "redex"))
+(define deps '("base" "redex-pict-lib"))

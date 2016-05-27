@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/match
-         (only-in redex lw with-atomic-rewriter with-compound-rewriters)
+         (only-in redex/pict lw with-atomic-rewriter with-compound-rewriters)
          (for-syntax racket/base syntax/parse syntax/stx racket/format)
          (for-template racket/base))
 

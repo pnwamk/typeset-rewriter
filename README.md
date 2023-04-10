@@ -1,7 +1,7 @@
 # typeset-rewriter
 Simple, low level rewriters for PLT Redex typesetting.
 
-See the PLT Redex docs on [typesetting](http://docs.racket-lang.org/redex/The_Redex_Reference.html?q=redex#%28part._.Typesetting%29) for more details. These macros are just a thin layer on top of these mechanics.
+See the PLT Redex docs on [typesetting](https://docs.racket-lang.org/redex/reference.html#%28part._.Typesetting%29) for more details. These macros are just a thin layer on top of these mechanics.
 
 
 Provides the following syntax:
